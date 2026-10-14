@@ -1,8 +1,10 @@
 # 拾页 · 个人知识库
 
-一个**零成本**的纯静态个人网站：**GitHub Pages** 托管 + **Pages CMS** 可视化后台 + **Cloudflare** 提供 DNS 与 SSL + **DigitalPlat FreeDomain** 免费 `.us.kg` 域名。
+一个**零成本**的纯静态个人网站：**GitHub Pages** 托管 + **Pages CMS** 可视化后台。
 
-年支出 **0 元**，无需服务器、无需数据库、无需本地构建环境。
+年支出 **0 元**，无需服务器、无需数据库、无需本地构建环境，也**不需要买域名**——用 GitHub 自带的 `*.github.io` 地址就能完整上线。
+
+> 以后若想换成自己的域名，可再接入 **Cloudflare** 与 **DigitalPlat FreeDomain** 的免费 `.us.kg` 域名，步骤见《部署手册.md》第三、四部分。目前**暂不绑定**，不影响网站任何功能。
 
 ---
 
@@ -14,11 +16,12 @@
 | 线上地址 | <https://gzxyc.github.io/blog/> |
 | 托管方式 | GitHub Pages · Deploy from a branch（main / root） |
 | 后台地址 | <https://app.pagescms.org> |
-| 自定义域名 | **待定** —— 确定前缀后执行下方命令即可绑定，见《部署手册.md》 |
+| 自定义域名 | **暂不绑定** —— 现用 GitHub Pages 默认地址，功能完全可用 |
+
+以后想绑自己的域名时，补上 `--domain` 重跑一次部署脚本即可，全站地址（sitemap、robots、各页面的 canonical 与 og:url）会自动一起切换，不用手改任何文件：
 
 ```bash
-# 域名定下来后执行这一条，脚本会自动写回 CNAME 并完成绑定
-node tools/deploy.mjs --user=gzxyc --repo=blog --domain=你的前缀.us.kg --token=你的Token
+node tools/deploy.mjs --user=gzxyc --repo=blog --domain=你的域名 --token=你的Token
 ```
 
 ---
@@ -31,6 +34,7 @@ node tools/deploy.mjs --user=gzxyc --repo=blog --domain=你的前缀.us.kg --tok
 | **可视化后台** | 通过 [Pages CMS](https://pagescms.org) 在浏览器里写文章改配置，手机上也能发文 |
 | **响应式** | 手机、平板、桌面自适应；支持浅色 / 深色主题自动跟随系统并记忆选择 |
 | **站内搜索** | 纯前端全文检索，覆盖标题、摘要、正文、标签 |
+| **规范链接** | canonical 与 og:url 由脚本在运行时按真实地址推导，换域名、换路径都不用改页面 |
 | **无外链依赖** | Markdown 渲染库已本地化到 `assets/vendor/`，不依赖任何 CDN |
 
 ---
@@ -91,13 +95,12 @@ node tools/serve.mjs
 node tools/deploy.mjs \
   --user=你的GitHub用户名 \
   --repo=仓库名 \
-  --domain=你的域名.us.kg \
   --token=你的PersonalAccessToken
 ```
 
-脚本会自动完成：写入域名配置 → 初始化 git → 创建远程仓库 → 推送代码 → 开启 Pages → 绑定自定义域名 → 清除本地残留的 Token。
+脚本会自动完成：写入站点地址 → 初始化 git → 创建远程仓库 → 推送代码 → 开启 Pages → 清除本地残留的 Token。
 
-**`--domain` 可以省略。** 域名还没想好时，脚本会移除 `CNAME`（避免 GitHub 绑定到错误域名），并把 `sitemap.xml`、`robots.txt` 里的地址先指向 GitHub Pages 临时地址。之后域名定下来，再带 `--domain` 重跑一次即可切换，其余文件不需要手动改。
+**`--domain` 是可选的，不填也能完整上线。** 不填时站点使用 GitHub Pages 默认地址 `https://用户名.github.io/仓库名/`，脚本会移除 `CNAME`（避免 GitHub 绑定到错误域名）。以后想绑自己的域名，再带上 `--domain=你的域名` 重跑一次即可——脚本会把 `sitemap.xml`、`robots.txt` 以及各页面里的 canonical / og:url 一并改到新地址，其余文件不需要手动改。
 
 常用开关：
 
@@ -133,10 +136,14 @@ node tools/deploy.mjs \
 
 ---
 
-## 关于免费域名的两点提醒
+## 关于自定义域名（目前不需要）
+
+本站**目前不绑定自定义域名**，用 GitHub Pages 默认地址即可。以下两点提醒仅在以后你决定绑域名时才适用：
 
 1. `.us.kg` 域名由志愿者团队运营，**没有可用性保障**，请勿用于生产级业务。
 2. 免费域名**需要定期手动续期**，建议在日历里设一个年度提醒。
+
+具体申请与解析步骤见《部署手册.md》第三、四部分。
 
 ---
 

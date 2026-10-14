@@ -355,7 +355,43 @@
     setMeta('name', 'author', site.author || '');
     setMeta('property', 'og:title', document.title);
     setMeta('property', 'og:description', desc);
-    setMeta('property', 'og:type', 'website');
+    setMeta('property', 'og:type', (payload && payload.ogType) || 'website');
+  }
+
+  /* ---------------- 规范链接（canonical / og:url） ----------------
+     站点现在跑在 GitHub Pages 的子路径下，以后也可能绑上自定义域名，
+     所以地址不在 HTML 里写死，而是运行时按当前真实地址推导：
+     换域名、换路径都能自动对准，不需要改任何页面。 */
+  function canonicalUrl() {
+    var path = location.pathname.replace(/index\.html$/, '');
+    var query = '';
+    /* 只有文章页的 ?p= 属于内容本身；其余页面的查询参数只是筛选状态，
+       不能让它变成独立的规范地址 */
+    if (/post\.html$/.test(path)) {
+      var m = /[?&]p=([^&]+)/.exec(location.search);
+      if (m) query = '?p=' + m[1];
+    }
+    return location.origin + path + query;
+  }
+
+  function setCanonical() {
+    var href = canonicalUrl();
+
+    var link = document.querySelector('link[rel="canonical"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.setAttribute('rel', 'canonical');
+      document.head.appendChild(link);
+    }
+    link.setAttribute('href', href);
+
+    var og = document.querySelector('meta[property="og:url"]');
+    if (!og) {
+      og = document.createElement('meta');
+      og.setAttribute('property', 'og:url');
+      document.head.appendChild(og);
+    }
+    og.setAttribute('content', href);
   }
 
   /* ---------------- 组件 ---------------- */
@@ -614,7 +650,7 @@
       navHtml +
       relatedHtml;
 
-    renderMeta(site, { title: post.title, description: effectiveSummary(post) });
+    renderMeta(site, { title: post.title, description: effectiveSummary(post), ogType: 'article' });
   }
 
   /* ---------------- 归档页 ---------------- */
@@ -818,6 +854,7 @@
     initTheme();
     bindThemeToggle();
     renderBackToTop();
+    setCanonical();
 
     var page = document.body.dataset.page || 'home';
 

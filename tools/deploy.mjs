@@ -4,16 +4,20 @@
  * 拾页 · 一键部署脚本
  * ----------------------------------------------------------------------------
  * 它做的事情：
- *   1. 把域名写入 CNAME / sitemap.xml / robots.txt
+ *   1. 写入站点地址（sitemap.xml / robots.txt / 各页面的 canonical 与 og:url）
  *   2. 初始化本地 git 仓库并提交
  *   3. 通过 GitHub API 创建远程仓库（若已存在则跳过）
  *   4. 推送代码到 main 分支
- *   5. 开启 GitHub Pages 并绑定自定义域名
+ *   5. 开启 GitHub Pages（带 --domain 时同时绑定自定义域名）
  *   6. 抹掉本地 git 配置里残留的 Token
  *
  * 用法：
- *   node tools/deploy.mjs --user=你的GitHub用户名 --repo=仓库名 \
- *        --domain=你的域名.us.kg --token=你的Token
+ *   node tools/deploy.mjs --user=你的GitHub用户名 --repo=仓库名 --token=你的Token
+ *
+ *   --domain 是可选参数。不填就用 GitHub Pages 默认地址
+ *   （https://用户名.github.io/仓库名/），网站照样完整上线。
+ *   以后哪天想绑自定义域名了，补上 --domain=你的域名 重跑一次即可，
+ *   脚本会把全站地址一起改过去，不用手工动任何文件。
  *
  * 参数也可以不带等号（--user 张三），或者用环境变量：
  *   GITHUB_USER / GITHUB_REPO / GITHUB_DOMAIN / GITHUB_TOKEN
@@ -97,46 +101,70 @@ if (cfg.domain && (!/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/.test(cfg.domain) || !cf
 if (!/^[A-Za-z0-9._-]+$/.test(cfg.repo)) fail(`仓库名不合法：${cfg.repo}`);
 if (!/^[A-Za-z0-9-]+$/.test(cfg.user)) fail(`GitHub 用户名不合法：${cfg.user}`);
 
-/* 域名未确定时，先用 GitHub Pages 临时地址，域名定下来后再跑一次本脚本即可切换 */
+/* 站点地址：带 --domain 时用自定义域名，否则用 GitHub Pages 默认地址。
+   不填域名也能完整上线，以后想绑域名时补上参数重跑一次即可。 */
 const TEMP_BASE = `${cfg.user}.github.io/${cfg.repo}`;
 const HOST = cfg.domain || TEMP_BASE;
+const NEW_BASE = `https://${HOST}`;
+
+/* 站点地址散落在 sitemap、robots 和各页面的 canonical / og:url 里，
+   换地址时必须一起改，否则会指向错误位置 */
+const URL_FILES = [
+  'sitemap.xml', 'robots.txt',
+  'index.html', 'post.html', 'archive.html', 'tags.html', 'search.html', 'about.html', '404.html'
+];
+
+/* 从 sitemap 的第一条 <loc> 读出当前写入的站点地址，作为替换的基准。
+   站点地址可能已被写过（不是初始占位符），所以不能只认占位符。 */
+function detectCurrentBase() {
+  const abs = join(ROOT, 'sitemap.xml');
+  if (!existsSync(abs)) return '';
+  const m = readFileSync(abs, 'utf8').match(/<loc>\s*(https?:\/\/[^<\s]+?)\s*<\/loc>/);
+  return m ? m[1].replace(/\/+$/, '') : '';
+}
+
+/* 把站点地址从旧值整体替换为新值，返回被改动的文件数 */
+function rewriteBase(from, to) {
+  if (!from || from === to) return 0;
+  let changed = 0;
+  URL_FILES.forEach(function (f) {
+    const abs = join(ROOT, f);
+    if (!existsSync(abs)) return;
+    const before = readFileSync(abs, 'utf8');
+    const after = before.split(from).join(to);
+    if (before !== after) { writeFileSync(abs, after, 'utf8'); changed++; }
+  });
+  return changed;
+}
+
+const OLD_BASE = detectCurrentBase();
 
 if (cfg.dryRun) {
   log.warn('dry-run 模式：只做参数与文件检查，不改写任何文件、不执行 git 操作');
-  console.log(`  ${C.dim}即将写入的站点地址：https://${HOST}${C.reset}`);
-  ['CNAME', 'sitemap.xml', 'robots.txt'].forEach(function (f) {
-    const abs = join(ROOT, f);
-    if (f === 'CNAME' && !cfg.domain) {
-      log.info('CNAME：域名未定，' + (existsSync(abs) ? '将被移除' : '已不存在'));
-      return;
-    }
-    if (!existsSync(abs)) { log.err(`${f}：文件不存在`); return; }
-    const txt = readFileSync(abs, 'utf8');
-    const hits = txt.split(PLACEHOLDER).length - 1;
-    log.info(`${f}：${hits > 0 ? '将替换 ' + hits + ' 处占位符' : '无需替换'}`);
-  });
+  console.log(`  ${C.dim}当前站点地址：${OLD_BASE || '（文件中未找到）'}${C.reset}`);
+  console.log(`  ${C.dim}目标站点地址：${NEW_BASE}${C.reset}`);
+  if (OLD_BASE && OLD_BASE !== NEW_BASE) {
+    const hits = URL_FILES.reduce(function (n, f) {
+      const abs = join(ROOT, f);
+      return existsSync(abs) ? n + readFileSync(abs, 'utf8').split(OLD_BASE).length - 1 : n;
+    }, 0);
+    log.info(`将替换 ${hits} 处地址（分布在 ${URL_FILES.length} 个文件中）`);
+  } else {
+    log.info('站点地址无需变更');
+  }
+  const cnameAbs = join(ROOT, 'CNAME');
+  log.info('CNAME：' + (cfg.domain
+    ? `将写入 ${cfg.domain}`
+    : (existsSync(cnameAbs) ? '将被移除' : '保持不存在')));
   log.ok('参数校验通过，可以正式执行');
   process.exit(0);
 }
 
-log.step('1/6', '写入站点配置');
+log.step('1/6', '写入站点地址');
 console.log(`  ${C.dim}用户名　　：${cfg.user}${C.reset}`);
 console.log(`  ${C.dim}仓库名　　：${cfg.repo}${C.reset}`);
-console.log(`  ${C.dim}自定义域名：${cfg.domain || '（未确定，先用临时地址）'}${C.reset}`);
-console.log(`  ${C.dim}站点地址　：https://${HOST}${C.reset}`);
-
-function replaceInFile(relPath, from, to) {
-  const abs = join(ROOT, relPath);
-  if (!existsSync(abs)) { log.warn(`${relPath} 不存在，跳过`); return; }
-  const before = readFileSync(abs, 'utf8');
-  const after = before.split(from).join(to);
-  if (before !== after) {
-    writeFileSync(abs, after, 'utf8');
-    log.ok(`${relPath} 已更新`);
-  } else {
-    log.info(`${relPath} 无需改动`);
-  }
-}
+console.log(`  ${C.dim}自定义域名：${cfg.domain || '（暂不使用）'}${C.reset}`);
+console.log(`  ${C.dim}站点地址　：${NEW_BASE}${C.reset}`);
 
 const cnamePath = join(ROOT, 'CNAME');
 if (cfg.domain) {
@@ -144,11 +172,19 @@ if (cfg.domain) {
   log.ok('CNAME 已写入 ' + cfg.domain);
 } else if (existsSync(cnamePath)) {
   rmSync(cnamePath);
-  log.warn('域名未确定，已移除 CNAME 文件（避免 GitHub Pages 绑定错误域名）');
+  log.warn('未使用自定义域名，已移除 CNAME 文件（避免 GitHub Pages 绑定错误域名）');
 }
 
-replaceInFile('sitemap.xml', PLACEHOLDER, HOST);
-replaceInFile('robots.txt', PLACEHOLDER, HOST);
+if (OLD_BASE && OLD_BASE !== NEW_BASE) {
+  const n = rewriteBase(OLD_BASE, NEW_BASE);
+  log.ok(`站点地址已由 ${OLD_BASE} 切换为 ${NEW_BASE}（改动 ${n} 个文件）`);
+} else {
+  log.info(`站点地址保持为 ${NEW_BASE}`);
+}
+
+/* 兼容直接从模板拿到的仓库：地址还写着占位符 */
+const ph = rewriteBase(PLACEHOLDER, HOST);
+if (ph) log.ok(`占位符已在 ${ph} 个文件中替换为 ${HOST}`);
 
 /* ----------------------------- git 操作 ----------------------------- */
 function git(argsArr, opts = {}) {
@@ -356,8 +392,8 @@ if (cfg.skipPages) {
     else log.warn(`绑定域名返回 HTTP ${r.status}：${r.data?.message || ''}`);
     log.info('HTTPS 证书会在 DNS 生效后由 GitHub 自动签发，稍后可在仓库 Pages 设置里勾选「Enforce HTTPS」');
   } else {
-    log.info('域名尚未确定，本次不绑定自定义域名');
-    log.info('定下前缀后，重新执行本脚本并加上 --domain=你的前缀.us.kg 即可切换');
+    log.info('本次未绑定自定义域名，站点使用 GitHub Pages 默认地址');
+    log.info('以后想绑域名时，补上 --domain=你的域名 重跑本脚本即可');
   }
 }
 
@@ -370,8 +406,8 @@ try {
 /* ----------------------------- 结果 ----------------------------- */
 console.log('\n' + '─'.repeat(64));
 console.log(`${C.green}${C.bold}部署完成${C.reset}\n`);
-console.log(`  仓库地址　：https://github.com/${cfg.user}/${cfg.repo}`);
-console.log(`  站点地址　：https://${TEMP_BASE}/`);
+console.log(`  仓库地址：https://github.com/${cfg.user}/${cfg.repo}`);
+console.log(`  站点地址：${NEW_BASE}/`);
 if (cfg.domain) console.log(`  自定义域名：https://${cfg.domain}`);
 console.log('\n' + `${C.bold}接下来：${C.reset}`);
 
@@ -383,9 +419,9 @@ if (cfg.domain) {
   console.log('     · 代理状态先设为「仅 DNS」（灰色云朵）');
   console.log('  2. 等 DNS 生效后，到仓库 Settings → Pages 勾选「Enforce HTTPS」');
 } else {
-  console.log('  1. 先访问上面的临时地址，确认网站显示正常（约需 1～2 分钟生效）');
-  console.log('  2. 想好域名前缀后，重新执行本脚本并补上 --domain=你的前缀.us.kg');
-  console.log('     脚本会自动写回 CNAME 并完成绑定，其余步骤见《部署手册.md》');
+  console.log('  1. 等 1～2 分钟后访问上面的站点地址，确认显示正常');
+  console.log('  2. 想改内容就到后台 https://app.pagescms.org 编辑');
+  console.log('  3. 以后想绑自定义域名时，补上 --domain=你的域名 重跑本脚本即可');
 }
-console.log('\n  详细步骤见项目里的《部署手册.md》');
+console.log('\n  详细说明见项目里的《部署手册.md》与《README.md》');
 console.log('─'.repeat(64) + '\n');
