@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  站点地图。域名会在部署时由 tools/deploy.mjs 自动替换。
+  说明：因为本站是纯静态、无构建步骤，新增文章后这里的网址列表不会自动更新。
+  如果你在意搜索引擎收录，可以每次发新文章后手动把该文章的地址追加到下方。
+  文章地址格式：post.html?p=文章访问标识
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <url>
+    <loc>https://gzxyc.github.io/blog/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <url>
+    <loc>https://gzxyc.github.io/blog/archive.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://gzxyc.github.io/blog/tags.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://gzxyc.github.io/blog/about.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://gzxyc.github.io/blog/post.html?p=welcome-to-shiye</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://gzxyc.github.io/blog/post.html?p=how-to-publish</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://gzxyc.github.io/blog/post.html?p=zero-cost-site-playbook</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://gzxyc.github.io/blog/post.html?p=markdown-cheatsheet</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://gzxyc.github.io/blog/post.html?p=tagging-system</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://gzxyc.github.io/blog/post.html?p=note-taking-workflow</loc>
+    <priority>0.8</priority>
+  </url>
+
+</urlset>

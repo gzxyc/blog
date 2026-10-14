@@ -1,0 +1,9 @@
+# 告诉搜索引擎抓取规则。域名由部署脚本自动替换。
+User-agent: *
+Allow: /
+Disallow: /content/
+Disallow: /tools/
+Disallow: /.pages.yml
+Disallow: /README.md
+
+Sitemap: https://gzxyc.github.io/blog/sitemap.xml

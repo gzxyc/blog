@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fbfaf7">
+<title>拾页 · 个人知识库</title>
+<meta name="description" content="记录、整理与沉淀。一个关于学习笔记与工作心得的个人知识库。">
+<meta property="og:type" content="website">
+<script>
+/* 在样式加载前确定主题，避免刷新时闪白 */
+(function () {
+  try {
+    var s = localStorage.getItem('shiye-theme');
+    if (!s) s = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', s);
+  } catch (e) {}
+})();
+</script>
+<link rel="icon" type="image/svg+xml" href="assets/images/logo.svg">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="home">
+
+<a class="skip-link" href="#main">跳到主要内容</a>
+
+<header class="site-header" id="site-header"></header>
+
+<main id="main">
+  <div class="container">
+
+    <section class="hero" id="home-hero" aria-label="站点简介"></section>
+
+    <div class="layout">
+      <div class="layout-main">
+        <div class="section-head">
+          <h2>最新文章</h2>
+          <a class="more" href="archive.html">全部归档 →</a>
+        </div>
+
+        <div class="post-list" id="post-list" aria-live="polite">
+          <div class="skeleton"><div class="bar w70"></div><div class="bar w90"></div><div class="bar w40"></div></div>
+          <div class="skeleton"><div class="bar w70"></div><div class="bar w90"></div><div class="bar w40"></div></div>
+          <div class="skeleton"><div class="bar w70"></div><div class="bar w90"></div><div class="bar w40"></div></div>
+        </div>
+
+        <nav class="pagination" id="pagination" aria-label="分页导航"></nav>
+      </div>
+
+      <aside class="sidebar" id="sidebar-host" aria-label="侧边栏"></aside>
+    </div>
+
+  </div>
+</main>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="assets/vendor/marked.min.js" defer></script>
+<script src="assets/js/app.js" defer></script>
+</body>
+</html>

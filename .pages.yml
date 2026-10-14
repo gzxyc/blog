@@ -1,0 +1,229 @@
+# ---------------------------------------------------------------------------
+# Pages CMS 配置文件
+# 文档：https://pagescms.org/docs/configuration/
+#
+# 这个文件定义了后台（app.pagescms.org）里能看到什么、能改什么。
+# 站点前端不读取本文件 —— 改错了只会影响后台界面，不会弄坏网站。
+# ---------------------------------------------------------------------------
+
+# 图片等素材的存放位置
+media:
+  name: images
+  label: 图片素材
+  input: assets/images
+  output: /assets/images
+  extensions: [png, jpg, jpeg, webp, gif, svg]
+
+settings:
+  content:
+    merge: true
+
+content:
+  # =========================================================================
+  # 一、文章管理
+  # 所有文章存于 content/posts.json。新增、修改、删除都在这里完成。
+  # =========================================================================
+  - name: posts
+    label: 文章管理
+    type: file
+    path: content/posts.json
+    format: json
+    fields:
+      - name: posts
+        label: 文章列表
+        type: object
+        list:
+          min: 0
+          collapsible:
+            collapsed: true
+            summary: "{title}"
+        fields:
+          - name: title
+            label: 标题
+            type: string
+            required: true
+
+          - name: slug
+            label: 访问标识
+            description: 英文小写、用短横线连接，例如 first-post。它决定文章网址 post.html?p=first-post，发布后不要修改。
+            type: string
+            required: true
+
+          - name: date
+            label: 发布日期
+            type: date
+            required: true
+            options:
+              time: false
+              format: "yyyy-MM-dd"
+
+          - name: category
+            label: 分类
+            description: 一篇文章只填一个分类，例如「方法笔记」。
+            type: string
+
+          - name: tags
+            label: 标签
+            description: 可填多个，回车分隔。
+            type: string
+            list: true
+
+          - name: summary
+            label: 摘要
+            description: 显示在列表页和搜索结果里，建议 60 字以内。留空则自动截取正文开头。
+            type: text
+
+          - name: cover
+            label: 封面图
+            description: 可留空。
+            type: image
+            options:
+              media: images
+
+          - name: draft
+            label: 设为草稿
+            description: 打开后文章不会对外显示，但内容会被保存。
+            type: boolean
+
+          - name: body
+            label: 正文
+            description: 支持 Markdown 语法，写法见站内《排版参考：本站支持的写法》。
+            type: rich-text
+            options:
+              media: images
+
+  # =========================================================================
+  # 二、站点设置
+  # 站点名称、副标题、导航、页脚等都在这一个文件里。
+  # =========================================================================
+  - name: site
+    label: 站点设置
+    type: file
+    path: content/site.json
+    format: json
+    fields:
+      - name: title
+        label: 站点名称
+        type: string
+        required: true
+
+      - name: subtitle
+        label: 副标题
+        type: string
+
+      - name: description
+        label: 站点描述
+        description: 用于搜索引擎和社交分享，建议 80 字以内。
+        type: text
+
+      - name: keywords
+        label: 关键词
+        description: 多个关键词用英文逗号分隔。
+        type: string
+
+      - name: author
+        label: 作者署名
+        type: string
+
+      - name: authorBio
+        label: 作者简介
+        description: 显示在首页侧栏和页脚。
+        type: text
+
+      - name: avatar
+        label: 头像
+        description: 可留空，留空时自动显示站点名称首字。
+        type: image
+        options:
+          media: images
+
+      - name: heroTitle
+        label: 首页大标题
+        type: string
+
+      - name: heroText
+        label: 首页副文案
+        type: text
+
+      - name: perPage
+        label: 每页文章数
+        type: number
+        default: 6
+
+      - name: accent
+        label: 主题点缀色
+        description: 十六进制颜色，例如 #2E6E5E。整站的链接、按钮、高亮都会跟着变。
+        type: string
+
+      - name: footerText
+        label: 页脚文字
+        type: string
+
+      - name: icp
+        label: 备案号
+        description: 没有就留空。
+        type: string
+
+      - name: nav
+        label: 顶部导航
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{label}"
+        fields:
+          - name: label
+            label: 名称
+            type: string
+          - name: href
+            label: 链接
+            description: 站内页面直接写文件名，例如 archive.html。
+            type: string
+
+      - name: links
+        label: 页脚链接
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{label}"
+        fields:
+          - name: label
+            label: 名称
+            type: string
+          - name: url
+            label: 网址
+            type: string
+
+  # =========================================================================
+  # 三、关于页面
+  # =========================================================================
+  - name: about
+    label: 关于页面
+    type: file
+    path: content/about.json
+    format: json
+    fields:
+      - name: title
+        label: 页面标题
+        type: string
+
+      - name: updated
+        label: 更新日期
+        type: date
+        options:
+          time: false
+          format: "yyyy-MM-dd"
+
+      - name: avatar
+        label: 配图
+        description: 可留空。
+        type: image
+        options:
+          media: images
+
+      - name: body
+        label: 正文
+        type: rich-text
+        options:
+          media: images

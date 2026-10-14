@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fbfaf7">
+<title>关于 · 拾页</title>
+<script>
+(function () {
+  try {
+    var s = localStorage.getItem('shiye-theme');
+    if (!s) s = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', s);
+  } catch (e) {}
+})();
+</script>
+<link rel="icon" type="image/svg+xml" href="assets/images/logo.svg">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="about">
+
+<a class="skip-link" href="#main">跳到主要内容</a>
+
+<header class="site-header" id="site-header"></header>
+
+<main id="main">
+  <div class="container">
+    <div class="layout layout--single">
+      <article id="about-host">
+        <div class="loading-state">正在载入…</div>
+      </article>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="assets/vendor/marked.min.js" defer></script>
+<script src="assets/js/app.js" defer></script>
+</body>
+</html>
