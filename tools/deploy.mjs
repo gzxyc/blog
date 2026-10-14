@@ -188,6 +188,16 @@ if (!getCfg('user.name')) {
   log.info('已设置本地提交用户名');
 }
 
+/* 让中文文件名正常显示；Windows 上 schannel 偶发 TLS 中断，改用 OpenSSL 更稳 */
+execFileSync('git', ['config', 'core.quotepath', 'false'], { cwd: ROOT });
+if (process.platform === 'win32') {
+  try {
+    execFileSync('git', ['config', 'http.sslBackend', 'openssl'], { cwd: ROOT, stdio: 'pipe' });
+    log.info('Windows 平台：已切换 git 的 TLS 后端为 OpenSSL');
+  } catch { /* 旧版本 git 可能不支持，忽略 */ }
+}
+execFileSync('git', ['config', 'http.version', 'HTTP/1.1'], { cwd: ROOT });
+
 log.step('3/6', '提交本地改动');
 execFileSync('git', ['add', '-A'], { cwd: ROOT });
 let hasChanges = true;
@@ -268,37 +278,59 @@ try {
 try { execFileSync('git', ['remote', 'add', 'origin', authUrl], { cwd: ROOT, stdio: 'pipe' }); }
 catch { execFileSync('git', ['remote', 'add', 'origin', repoUrl], { cwd: ROOT, stdio: 'pipe' }); }
 
+/* 网络类瞬时故障（代理超时、TLS 中断、连接被重置等）可以自动重试，
+   与"远程有冲突"是两回事，不能混为一谈 */
+const NETWORK_ERROR = /CONNECT tunnel failed|Empty reply from server|schannel|Connection reset|Connection timed out|Could not resolve host|Failed to connect|SSL|TLS|50[234]/i;
+const CONFLICT_ERROR = /non-fast-forward|fetch first|rejected|behind its remote/i;
+
+function sleepSync(ms) {
+  const buf = new SharedArrayBuffer(4);
+  Atomics.wait(new Int32Array(buf), 0, 0, ms);
+}
+
 function tryPush(extra = []) {
-  try {
-    execFileSync('git', ['push', '-u', 'origin', 'main', ...extra], { cwd: ROOT, stdio: 'pipe' });
-    return true;
-  } catch (e) {
-    const msg = `${e.stdout || ''}${e.stderr || ''}`;
-    if (/non-fast-forward|fetch first|rejected/i.test(msg)) {
-      log.warn('远程仓库已有内容，与本地历史冲突');
-      if (cfg.force) {
-        log.warn('检测到 --force，将强制覆盖远程 main 分支');
-        execFileSync('git', ['push', '-u', 'origin', 'main', '--force'], { cwd: ROOT, stdio: 'inherit' });
-        return true;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      execFileSync('git', ['push', '-u', 'origin', 'main', ...extra], { cwd: ROOT, stdio: 'pipe' });
+      return { ok: true };
+    } catch (e) {
+      const msg = `${e.stdout || ''}${e.stderr || ''}`;
+
+      if (CONFLICT_ERROR.test(msg)) {
+        log.warn('远程仓库已有内容和本地历史冲突');
+        if (cfg.force) {
+          log.warn('检测到 --force，将强制覆盖远程 main 分支');
+          execFileSync('git', ['push', '-u', 'origin', 'main', '--force'], { cwd: ROOT, stdio: 'inherit' });
+          return { ok: true };
+        }
+        return { ok: false, reason: 'conflict' };
       }
-      return false;
+
+      if (NETWORK_ERROR.test(msg) && attempt < 3) {
+        log.warn(`网络中断（第 ${attempt} 次），3 秒后自动重试…`);
+        sleepSync(3000);
+        continue;
+      }
+
+      return { ok: false, reason: 'error', message: msg };
     }
-    throw new Error(msg);
   }
+  return { ok: false, reason: 'error', message: '重试 3 次后仍未成功' };
 }
 
-let pushed = false;
-try { pushed = tryPush(); }
-catch (e) {
-  log.err('推送失败：' + e.message);
-}
+let result;
+try { result = tryPush(); }
+catch (e) { result = { ok: false, reason: 'error', message: e.message }; }
 
-if (!pushed) {
+if (!result.ok) {
   execFileSync('git', ['remote', 'set-url', 'origin', repoUrl], { cwd: ROOT, stdio: 'pipe' });
-  fail('代码未能推送成功',
-    cfg.force
-      ? '请检查 Token 是否具备 repo 写入权限。'
-      : `远程 ${cfg.user}/${cfg.repo} 可能已存在内容。若确认要覆盖，请加参数 --force 重新执行。`);
+  if (result.reason === 'conflict') {
+    fail('代码未能推送成功',
+      `远程 ${cfg.user}/${cfg.repo} 已存在内容。若确认要覆盖，请加参数 --force 重新执行。`);
+  }
+  fail('代码未能推送成功（网络原因）',
+    '已自动重试 3 次仍未成功。请检查网络或代理设置后重新执行本脚本。\n' +
+    `  错误详情：${(result.message || '').trim().split('\n').slice(-1)[0]}`);
 }
 log.ok(`已推送到 ${repoUrl}`);
 
