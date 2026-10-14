@@ -262,7 +262,9 @@ log.step('5/6', '推送代码到 GitHub');
 const repoUrl = `https://github.com/${cfg.user}/${cfg.repo}.git`;
 const authUrl = `https://${encodeURIComponent(cfg.user)}:${encodeURIComponent(cfg.token)}@github.com/${cfg.user}/${cfg.repo}.git`;
 
-execFileSync('git', ['remote', 'remove', 'origin'], { cwd: ROOT, stdio: 'pipe' });
+try {
+  execFileSync('git', ['remote', 'remove', 'origin'], { cwd: ROOT, stdio: 'pipe' });
+} catch { /* 本来就没有 origin，忽略 */ }
 try { execFileSync('git', ['remote', 'add', 'origin', authUrl], { cwd: ROOT, stdio: 'pipe' }); }
 catch { execFileSync('git', ['remote', 'add', 'origin', repoUrl], { cwd: ROOT, stdio: 'pipe' }); }
 

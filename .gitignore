@@ -17,3 +17,6 @@ __pycache__/
 # 编辑器配置
 .vscode/
 .idea/
+
+# 本地工作区数据（不发布到公开仓库）
+.workbuddy/
