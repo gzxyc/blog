@@ -6,6 +6,23 @@
 
 ---
 
+## 当前部署状态
+
+| 项 | 值 |
+| --- | --- |
+| GitHub 仓库 | <https://github.com/gzxyc/blog> |
+| 线上地址 | <https://gzxyc.github.io/blog/> |
+| 托管方式 | GitHub Pages · Deploy from a branch（main / root） |
+| 后台地址 | <https://app.pagescms.org> |
+| 自定义域名 | **待定** —— 确定前缀后执行下方命令即可绑定，见《部署手册.md》 |
+
+```bash
+# 域名定下来后执行这一条，脚本会自动写回 CNAME 并完成绑定
+node tools/deploy.mjs --user=gzxyc --repo=blog --domain=你的前缀.us.kg --token=你的Token
+```
+
+---
+
 ## 这套方案的特点
 
 | 特性 | 说明 |
@@ -45,10 +62,12 @@
 │   └── serve.mjs        本地预览服务器
 │
 ├── .pages.yml           ★ Pages CMS 后台配置
-├── CNAME                自定义域名（部署时自动写入）
 ├── .nojekyll            告诉 GitHub Pages 不要用 Jekyll 处理
+├── .gitattributes       统一换行符为 LF（避免 Windows 下整文件 diff）
+├── .gitignore           忽略本地工作区数据
 ├── robots.txt           搜索引擎抓取规则
-└── sitemap.xml          站点地图
+├── sitemap.xml          站点地图
+└── CNAME                自定义域名（仅在绑定了域名后存在，由 deploy.mjs 写入）
 ```
 
 ---
@@ -77,6 +96,8 @@ node tools/deploy.mjs \
 ```
 
 脚本会自动完成：写入域名配置 → 初始化 git → 创建远程仓库 → 推送代码 → 开启 Pages → 绑定自定义域名 → 清除本地残留的 Token。
+
+**`--domain` 可以省略。** 域名还没想好时，脚本会移除 `CNAME`（避免 GitHub 绑定到错误域名），并把 `sitemap.xml`、`robots.txt` 里的地址先指向 GitHub Pages 临时地址。之后域名定下来，再带 `--domain` 重跑一次即可切换，其余文件不需要手动改。
 
 常用开关：
 
