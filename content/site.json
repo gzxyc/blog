@@ -1,24 +1,37 @@
 {
-  "title": "拾页",
-  "subtitle": "个人知识库",
-  "description": "记录、整理与沉淀。一个关于学习笔记与工作心得的个人知识库，按主题沉淀长文与清单。",
-  "keywords": "个人知识库,笔记,归档,拾页",
-  "author": "站长",
-  "authorBio": "在南方的一座城市上班，习惯把读到的、做过的整理成可以复用的笔记。相信写下来的东西才真正属于自己。",
-  "avatar": "",
-  "heroTitle": "把读到的、做过的，整理成能复用的笔记",
+  "title": "孤城",
+  "subtitle": "个人博客",
+  "description": "记录、整理与沉淀。一个关于学习笔记与工作心得的博客。",
+  "keywords": "孤城,博客",
+  "author": "孤城",
+  "authorBio": "在南方的一座城市上班，习惯记录。",
+  "heroTitle": "孤城个人博客",
   "heroText": "这里不追热点，只做沉淀。按主题整理长文、清单与方法论，方便日后检索与复用。",
-  "perPage": 4,
+  "perPage": 8,
   "accent": "#2E6E5E",
-  "footerText": "拾页 · 个人知识库",
-  "icp": "",
+  "footerText": "孤城 · 个人博客",
   "nav": [
-    { "label": "首页", "href": "index.html" },
-    { "label": "归档", "href": "archive.html" },
-    { "label": "标签", "href": "tags.html" },
-    { "label": "关于", "href": "about.html" }
+    {
+      "label": "首页",
+      "href": "index.html"
+    },
+    {
+      "label": "归档",
+      "href": "archive.html"
+    },
+    {
+      "label": "标签",
+      "href": "tags.html"
+    },
+    {
+      "label": "关于",
+      "href": "about.html"
+    }
   ],
   "links": [
-    { "label": "GitHub", "url": "https://github.com/" }
+    {
+      "label": "GitHub",
+      "url": "https://github.com/"
+    }
   ]
 }
