@@ -23,7 +23,9 @@
  *   GITHUB_USER / GITHUB_REPO / GITHUB_DOMAIN / GITHUB_TOKEN
  *
  * 额外开关：
- *   --force        远程仓库已有内容且冲突时，强制覆盖推送
+ *   --force        远程有本地没有的提交时，强制覆盖远程分支
+ *                  ⚠️ 会丢弃远程上那个提交——如果它来自 Pages CMS 后台，就等于
+ *                     丢掉你在后台的编辑。默认行为是自动合并远程改动，不需要它。
  *   --skip-pages   只推代码，不调用接口开启 Pages
  *   --dry-run      只做检查，不实际提交和推送
  * ============================================================================
@@ -315,9 +317,37 @@ try { execFileSync('git', ['remote', 'add', 'origin', authUrl], { cwd: ROOT, std
 catch { execFileSync('git', ['remote', 'add', 'origin', repoUrl], { cwd: ROOT, stdio: 'pipe' }); }
 
 /* 网络类瞬时故障（代理超时、TLS 中断、连接被重置等）可以自动重试，
-   与"远程有冲突"是两回事，不能混为一谈 */
+   与"远程有本地没有的提交"是两回事，不能混为一谈 */
 const NETWORK_ERROR = /CONNECT tunnel failed|Empty reply from server|schannel|Connection reset|Connection timed out|Could not resolve host|Failed to connect|SSL|TLS|50[234]/i;
 const CONFLICT_ERROR = /non-fast-forward|fetch first|rejected|behind its remote/i;
+
+/* 远程比本地新，绝大多数情况是"刚在 Pages CMS 后台改过内容"——
+   后台每保存一次就会往仓库提交一次。这时必须把远程改动合并下来再推，
+   绝不能直接覆盖，否则会丢掉后台里的编辑。 */
+function mergeRemote() {
+  try {
+    execFileSync('git', ['fetch', 'origin', 'main'], { cwd: ROOT, stdio: 'pipe' });
+  } catch (e) {
+    return { ok: false, message: '拉取远程失败' };
+  }
+
+  let ahead = '0';
+  try {
+    ahead = execFileSync('git', ['rev-list', '--count', 'HEAD..FETCH_HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
+  } catch { /* 保持默认 */ }
+
+  if (!ahead || ahead === '0') return { ok: false, message: '远程没有本地缺失的提交' };
+
+  log.info(`远程有 ${ahead} 个本地没有的提交（可能来自 Pages CMS 后台），先合并再推送`);
+  try {
+    execFileSync('git', ['merge', '--no-edit', 'FETCH_HEAD'], { cwd: ROOT, stdio: 'pipe' });
+    log.ok('已自动合并远程改动，后台内容不会丢失');
+    return { ok: true };
+  } catch (e) {
+    try { execFileSync('git', ['merge', '--abort'], { cwd: ROOT, stdio: 'pipe' }); } catch { /* 忽略 */ }
+    return { ok: false, message: `${e.stdout || ''}${e.stderr || ''}` };
+  }
+}
 
 function sleepSync(ms) {
   const buf = new SharedArrayBuffer(4);
@@ -333,13 +363,16 @@ function tryPush(extra = []) {
       const msg = `${e.stdout || ''}${e.stderr || ''}`;
 
       if (CONFLICT_ERROR.test(msg)) {
-        log.warn('远程仓库已有内容和本地历史冲突');
+        log.warn('远程仓库有本地没有的提交');
         if (cfg.force) {
-          log.warn('检测到 --force，将强制覆盖远程 main 分支');
+          log.warn('检测到 --force：将强制覆盖远程 main 分支');
+          log.warn('注意：后台（Pages CMS）里改过的内容会一并被丢弃');
           execFileSync('git', ['push', '-u', 'origin', 'main', '--force'], { cwd: ROOT, stdio: 'inherit' });
           return { ok: true };
         }
-        return { ok: false, reason: 'conflict' };
+        const m = mergeRemote();
+        if (m.ok) continue;
+        return { ok: false, reason: 'conflict', message: m.message };
       }
 
       if (NETWORK_ERROR.test(msg) && attempt < 3) {
@@ -361,8 +394,12 @@ catch (e) { result = { ok: false, reason: 'error', message: e.message }; }
 if (!result.ok) {
   execFileSync('git', ['remote', 'set-url', 'origin', repoUrl], { cwd: ROOT, stdio: 'pipe' });
   if (result.reason === 'conflict') {
-    fail('代码未能推送成功',
-      `远程 ${cfg.user}/${cfg.repo} 已存在内容。若确认要覆盖，请加参数 --force 重新执行。`);
+    fail('代码未能推送成功：远程有本地没有的改动，自动合并也未能完成',
+      '最常见的原因是你刚在 Pages CMS 后台改过内容。请在项目目录里手动执行：\n' +
+      '    git fetch origin main && git merge FETCH_HEAD\n' +
+      '  手动解决冲突后，再重跑本脚本。\n' +
+      `  ⚠️ 不要随手加 --force：它会覆盖远程分支，后台里改过的内容会一起丢失。\n` +
+      `  合并失败的详情：${(result.message || '').trim().split('\n').slice(-1)[0]}`);
   }
   fail('代码未能推送成功（网络原因）',
     '已自动重试 3 次仍未成功。请检查网络或代理设置后重新执行本脚本。\n' +
