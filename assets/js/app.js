@@ -1,7 +1,9 @@
 /* ==========================================================================
-   拾页 · 个人知识库 —— 全站脚本
+   全站脚本
    纯原生 JavaScript，无框架、无构建步骤。
-   内容全部来自 content/ 目录下的 JSON 文件（由 Pages CMS 后台维护）。
+   内容全部来自 content/ 目录下的 JSON 文件（由可视化后台维护）。
+   站点名称、地址等一律不写死在本文件里，一律读 content/site.json，
+   这样改站名、换托管平台都不用动代码。
    ========================================================================== */
 (function () {
   'use strict';
@@ -111,7 +113,7 @@
     try {
       return window.marked.parse(String(markdown || ''));
     } catch (e) {
-      console.error('[拾页] Markdown 渲染失败', e);
+      console.error('[站点] Markdown 渲染失败', e);
       return '<p>' + esc(markdown || '') + '</p>';
     }
   }
@@ -145,6 +147,17 @@
   var SKINS = ['ink', 'corporate', 'magazine', 'minimal', 'warm', 'terminal'];
   var DEFAULT_SKIN = 'ink';
   var SKIN_KEY = 'gucheng-skin';
+  var THEME_KEY = 'gucheng-theme';
+  /* 站点曾用名时期的旧键。读一次迁到新键后即删除，
+     这样老访客自己选过的深浅模式不会被重置。 */
+  var THEME_KEY_LEGACY = 'shiye-theme';
+
+  /* 改名过的文章：旧访问标识 → 新访问标识。
+     改动已发布文章的标识会让旧链接失效，所以旧的登记在这里，
+     访问时自动跳转到新地址。（见 renderPost） */
+  var LEGACY_SLUGS = {
+    'welcome-to-shiye': 'welcome-to-gucheng'
+  };
 
   function normalizeSkin(name) {
     var n = String(name == null ? '' : name).trim().toLowerCase();
@@ -179,7 +192,18 @@
 
   function initTheme() {
     var saved = null;
-    try { saved = localStorage.getItem('shiye-theme'); } catch (e) { /* 忽略 */ }
+    try {
+      saved = localStorage.getItem(THEME_KEY);
+      /* 旧键迁移：页面头部的内联脚本通常已经处理过，这里兜一次底 */
+      if (!saved) {
+        var old = localStorage.getItem(THEME_KEY_LEGACY);
+        if (old) {
+          localStorage.setItem(THEME_KEY, old);
+          localStorage.removeItem(THEME_KEY_LEGACY);
+          saved = old;
+        }
+      }
+    } catch (e) { /* 忽略 */ }
     var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     var theme = saved || (prefersDark ? 'dark' : 'light');
     applyTheme(theme);
@@ -199,7 +223,7 @@
       btn.addEventListener('click', function () {
         var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         applyTheme(next);
-        try { localStorage.setItem('shiye-theme', next); } catch (e) { /* 忽略 */ }
+        try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* 忽略 */ }
       });
     });
   }
@@ -286,7 +310,7 @@
         '<a class="brand" href="index.html" aria-label="返回首页">' +
           '<span class="brand-mark">拾</span>' +
           '<span class="brand-text">' +
-            '<span class="brand-name">' + esc(site.title || '拾页') + '</span>' +
+            '<span class="brand-name">' + esc(site.title || '本站') + '</span>' +
             (site.subtitle ? '<span class="brand-sub">' + esc(site.subtitle) + '</span>' : '') +
           '</span>' +
         '</a>' +
@@ -321,7 +345,7 @@
       '<div class="container">' +
         '<div class="footer-inner">' +
           '<div class="footer-about">' +
-            '<strong>' + esc(site.title || '拾页') + (site.subtitle ? ' · ' + esc(site.subtitle) : '') + '</strong>' +
+            '<strong>' + esc(site.title || '本站') + (site.subtitle ? ' · ' + esc(site.subtitle) : '') + '</strong>' +
             esc(site.authorBio || site.description || '') +
           '</div>' +
           '<div class="footer-meta">' +
@@ -635,6 +659,12 @@
       if (state.posts[i].slug === slug) { post = state.posts[i]; break; }
     }
 
+    if (!post && LEGACY_SLUGS[slug]) {
+      /* 文章改过访问标识：旧链接自动跳到新地址，避免出现死链 */
+      location.replace(postUrl(LEGACY_SLUGS[slug]));
+      return;
+    }
+
     if (!post || post.draft) {
       host.innerHTML = '<div class="error-state"><span class="big">404</span>' +
         '<h3>' + (post && post.draft ? '这篇文章还是草稿' : '文章不存在') + '</h3>' +
@@ -945,7 +975,7 @@
 
   /* ---------------- 错误提示 ---------------- */
   function showLoadError(err) {
-    console.error('[拾页] 内容加载失败：', err);
+    console.error('[站点] 内容加载失败：', err);
     var isFile = window.location.protocol === 'file:';
     var msg = isFile
       ? '当前是用「直接双击打开文件」的方式访问的，浏览器会拦截内容读取。请用本地服务器预览，例如在项目目录执行：python -m http.server 8080，然后访问 http://localhost:8080'
