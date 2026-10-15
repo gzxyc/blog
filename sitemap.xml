@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  站点地图。域名会在部署时由 tools/deploy.mjs 自动替换。
-  说明：因为本站是纯静态、无构建步骤，新增文章后这里的网址列表不会自动更新。
+  站点地图。
+
+  ★ 换托管平台时，全站只有两个文件需要改地址，这是其中之一（另一个是 robots.txt）。
+    做法：把下面所有 <loc> 里的站点地址整体替换成新地址即可，其余一律不用动。
+    之所以必须手写，是因为站点地图协议要求绝对地址，页面无法在运行时替它推导。
+    页面里的 canonical / og:url 相反 —— 由脚本按真实访问地址自动生成，换了平台自动对准。
+
+  说明：本站是纯静态、无构建步骤，新增文章后这里的列表不会自动更新。
   如果你在意搜索引擎收录，可以每次发新文章后手动把该文章的地址追加到下方。
   文章地址格式：post.html?p=文章访问标识
 -->
@@ -32,6 +38,11 @@
   </url>
 
   <url>
+    <loc>https://gzxyc.github.io/blog/post.html?p=multi-platform-deploy</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
     <loc>https://gzxyc.github.io/blog/post.html?p=welcome-to-shiye</loc>
     <priority>0.8</priority>
   </url>
@@ -58,6 +69,11 @@
 
   <url>
     <loc>https://gzxyc.github.io/blog/post.html?p=note-taking-workflow</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://gzxyc.github.io/blog/post.html?p=test-article</loc>
     <priority>0.8</priority>
   </url>
 

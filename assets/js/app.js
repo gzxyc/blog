@@ -325,8 +325,12 @@
             esc(site.authorBio || site.description || '') +
           '</div>' +
           '<div class="footer-meta">' +
+            /* 站内链接不新开窗口；只有站外地址才加 target / rel */
             (links.length ? '<div class="footer-links">' + links.map(function (l) {
-              return '<a href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer">' + esc(l.label || l.url) + '</a>';
+              var ext = /^https?:/i.test(l.url || '');
+              return '<a href="' + esc(l.url) + '"' +
+                (ext ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' +
+                esc(l.label || l.url) + '</a>';
             }).join('') + '</div>' : '') +
             (site.author ? '<div>作者：' + esc(site.author) + '</div>' : '') +
             '<div>' + esc(site.footerText || '') + '</div>' +
@@ -334,8 +338,10 @@
         '</div>' +
         '<div class="footer-bottom">' +
           '<span>© ' + year + ' ' + esc(site.title || '') + ' · 保留所有权利</span>' +
+          /* 托管说明不在代码里写死任何平台名：后台可改 site.hostingNote，
+             留空则用下面这句平台中立的兜底文案 */
           '<span>' + (site.icp ? esc(site.icp) + ' · ' : '') +
-            '本站由 GitHub Pages 托管 · 内容经 Pages CMS 管理</span>' +
+            esc(site.hostingNote || '纯静态站点 · 无服务器、无数据库') + '</span>' +
         '</div>' +
       '</div>';
   }
@@ -400,9 +406,12 @@
   }
 
   /* ---------------- 规范链接（canonical / og:url） ----------------
-     站点现在跑在 GitHub Pages 的子路径下，以后也可能绑上自定义域名，
-     所以地址不在 HTML 里写死，而是运行时按当前真实地址推导：
-     换域名、换路径都能自动对准，不需要改任何页面。 */
+     站点地址一律不在 HTML 里写死，而是运行时按当前真实访问地址推导：
+     换域名、换托管平台、换子路径都能自动对准，不需要改任何页面。
+     因此 HTML 里也不放静态兜底值——一来会被这里覆盖，二来一旦平台换了，
+     写死的旧地址反而会变成错误的规范链接。
+     唯一例外是 sitemap.xml 与 robots.txt：站点地图协议要求绝对地址，
+     无法运行时推导，换平台时需手工更新（文件头部已注明）。 */
   function canonicalUrl() {
     var path = location.pathname.replace(/index\.html$/, '');
     var query = '';

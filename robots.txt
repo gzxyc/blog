@@ -1,9 +1,12 @@
-# 告诉搜索引擎抓取规则。域名由部署脚本自动替换。
+# 搜索引擎抓取规则。
+# ★ 换托管平台时，全站只有两个文件需要改地址，这是其中之一（另一个是 sitemap.xml）。
+#   做法：把最后一行 Sitemap 的站点地址换成新地址即可。
 User-agent: *
 Allow: /
 Disallow: /content/
 Disallow: /tools/
 Disallow: /.pages.yml
 Disallow: /README.md
+Disallow: /themes.html
 
 Sitemap: https://gzxyc.github.io/blog/sitemap.xml

@@ -175,6 +175,16 @@ content:
         description: 留空时使用所选主题自带的配色。填写十六进制颜色（例如 #2E6E5E）则用你的颜色覆盖主题主色。
         type: string
 
+      - name: url
+        label: 站点地址
+        description: 本站的正式访问地址，结尾带斜杠，例如 https://example.com/。换托管平台后请同步改这里，并把 sitemap.xml、robots.txt 里的地址一起改掉。
+        type: string
+
+      - name: hostingNote
+        label: 托管说明
+        description: 显示在页脚版权行。留空则显示「纯静态站点 · 无服务器、无数据库」。不必写具体平台名，换平台时也不用改。
+        type: string
+
       - name: footerText
         label: 页脚文字
         type: string
@@ -213,6 +223,7 @@ content:
             type: string
           - name: url
             label: 网址
+            description: 站内页面直接写文件名，如 about.html；站外地址写完整网址（https:// 开头会自动新窗口打开）。
             type: string
 
   # =========================================================================
