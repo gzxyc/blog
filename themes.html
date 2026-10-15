@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fbfaf7">
+<title>主题预览 · 孤城</title>
+<link rel="canonical" href="https://gzxyc.github.io/blog/themes.html">
+<meta name="robots" content="noindex, follow">
+<meta name="description" content="六套主题皮肤的实时预览与对比，供站长选定站点主题。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://gzxyc.github.io/blog/themes.html">
+<script>
+/* 在样式加载前确定明暗与皮肤，避免刷新时闪出默认样式 */
+(function () {
+  try {
+    var d = document.documentElement;
+    var s = localStorage.getItem('shiye-theme');
+    if (!s) s = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    d.setAttribute('data-theme', s);
+    /* 皮肤同理：先用本地缓存预置一次，站点的真实设定等 site.json 取到后再校准 */
+    d.setAttribute('data-skin', localStorage.getItem('gucheng-skin') || 'ink');
+  } catch (e) {}
+})();
+</script>
+<link rel="icon" type="image/svg+xml" href="assets/images/logo.svg">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="themes">
+
+<a class="skip-link" href="#main">跳到主要内容</a>
+
+<header class="site-header" id="site-header"></header>
+
+<main id="main">
+  <div class="container">
+
+    <div class="crumbs">
+      <a href="index.html">首页</a><span class="sep">/</span><span>主题预览</span>
+    </div>
+
+    <header class="article-header">
+      <h1>主题预览</h1>
+      <div class="article-meta">
+        <span>六套主题 · 明暗两种模式 · 可即时切换</span>
+      </div>
+    </header>
+
+    <div class="notice">
+      <div>
+        <b>这一页是给你自己用的工具，不是站点内容。</b>
+        点下面的按钮即可即时预览，切换只作用在当前页面、立即生效但不保存。
+        选定之后，到后台「站点设置 → 站点主题」里选好并保存，才会真正对全站生效。
+        右上角那个明暗切换按钮同样可以实时试，两者互不影响。
+      </div>
+    </div>
+
+    <div class="theme-picker" id="themes-picker"></div>
+
+    <div class="section-head section-head--plain" style="margin-top:34px"><h2>正文排版效果</h2></div>
+    <div id="themes-prose" style="margin-bottom:48px"></div>
+
+    <div class="section-head section-head--plain"><h2>整站外观预览</h2></div>
+    <section class="hero" id="home-hero" aria-label="站点简介"></section>
+
+    <div class="layout">
+      <div class="layout-main">
+        <div class="post-list" id="post-list" aria-live="polite">
+          <div class="skeleton"><div class="bar w70"></div><div class="bar w90"></div><div class="bar w40"></div></div>
+          <div class="skeleton"><div class="bar w70"></div><div class="bar w90"></div><div class="bar w40"></div></div>
+        </div>
+        <nav class="pagination" id="pagination" aria-label="分页导航"></nav>
+      </div>
+      <aside class="sidebar" id="sidebar-host" aria-label="侧边栏"></aside>
+    </div>
+
+  </div>
+</main>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="assets/vendor/marked.min.js" defer></script>
+<script src="assets/js/app.js" defer></script>
+</body>
+</html>

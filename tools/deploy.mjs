@@ -113,7 +113,8 @@ const NEW_BASE = `https://${HOST}`;
    换地址时必须一起改，否则会指向错误位置 */
 const URL_FILES = [
   'sitemap.xml', 'robots.txt',
-  'index.html', 'post.html', 'archive.html', 'tags.html', 'search.html', 'about.html', '404.html'
+  'index.html', 'post.html', 'archive.html', 'tags.html', 'search.html', 'about.html', '404.html',
+  'themes.html'
 ];
 
 /* 从 sitemap 的第一条 <loc> 读出当前写入的站点地址，作为替换的基准。

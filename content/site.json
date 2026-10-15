@@ -8,7 +8,8 @@
   "heroTitle": "孤城个人博客",
   "heroText": "这里不追热点，只做沉淀。按主题整理长文、清单与方法论，方便日后检索与复用。",
   "perPage": 8,
-  "accent": "#2E6E5E",
+  "theme": "ink",
+  "accent": "",
   "footerText": "孤城 · 个人博客",
   "nav": [
     {

@@ -150,9 +150,29 @@ content:
         type: number
         default: 6
 
+      - name: theme
+        label: 站点主题
+        description: 决定整站的颜色、字体与排版气质。保存后刷新页面即可看到效果。不确定选哪个，可以先打开 themes.html 逐个对比。
+        type: select
+        default: ink
+        options:
+          values:
+            - name: ink
+              label: 铅墨 · 中文长文阅读（默认）
+            - name: corporate
+              label: 磐石 · 企业级 CMS / 官网
+            - name: magazine
+              label: 刊页 · 杂志 / 媒体
+            - name: minimal
+              label: 白纸 · 极简个人博客
+            - name: warm
+              label: 暖宣 · 纸感随笔
+            - name: terminal
+              label: 终端 · 技术极客
+
       - name: accent
         label: 主题点缀色
-        description: 十六进制颜色，例如 #2E6E5E。整站的链接、按钮、高亮都会跟着变。
+        description: 留空时使用所选主题自带的配色。填写十六进制颜色（例如 #2E6E5E）则用你的颜色覆盖主题主色。
         type: string
 
       - name: footerText

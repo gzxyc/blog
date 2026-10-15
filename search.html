@@ -12,9 +12,12 @@
 <script>
 (function () {
   try {
+    var d = document.documentElement;
     var s = localStorage.getItem('shiye-theme');
     if (!s) s = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', s);
+    d.setAttribute('data-theme', s);
+    /* 皮肤同理：先用本地缓存预置一次，站点的真实设定等 site.json 取到后再校准 */
+    d.setAttribute('data-skin', localStorage.getItem('gucheng-skin') || 'ink');
   } catch (e) {}
 })();
 </script>

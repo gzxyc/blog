@@ -137,7 +137,46 @@
     }, 1800);
   }
 
-  /* ---------------- 主题 ---------------- */
+  /* ---------------- 主题与皮肤 ----------------
+     两层互相独立，可以任意组合：
+       明暗模式 data-theme 由访客自己切换，只记在访客的浏览器里；
+       主题皮肤 data-skin 由站长在后台选定，全站统一。
+     皮肤名单必须与 style.css 第 20 节、.pages.yml 的下拉选项保持一致。 */
+  var SKINS = ['ink', 'corporate', 'magazine', 'minimal', 'warm', 'terminal'];
+  var DEFAULT_SKIN = 'ink';
+  var SKIN_KEY = 'gucheng-skin';
+
+  function normalizeSkin(name) {
+    var n = String(name == null ? '' : name).trim().toLowerCase();
+    return SKINS.indexOf(n) >= 0 ? n : DEFAULT_SKIN;
+  }
+
+  /* 浏览器地址栏的配色跟随当前皮肤的实际背景色，而不是写死的值 */
+  function syncThemeColor() {
+    var meta = $('meta[name="theme-color"]');
+    if (!meta) return;
+    var bg = '';
+    try { bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(); } catch (e) { bg = ''; }
+    if (bg) meta.setAttribute('content', bg);
+  }
+
+  function applySkin(name, options) {
+    var skin = normalizeSkin(name);
+    document.documentElement.setAttribute('data-skin', skin);
+    syncThemeColor();
+    /* 预览页切换时不写入本地缓存，否则会影响正常页面刷新时的预置 */
+    if (!options || options.remember !== false) {
+      try { localStorage.setItem(SKIN_KEY, skin); } catch (e) { /* 忽略 */ }
+    }
+    return skin;
+  }
+
+  function initSkin() {
+    var saved = null;
+    try { saved = localStorage.getItem(SKIN_KEY); } catch (e) { /* 忽略 */ }
+    applySkin(saved || DEFAULT_SKIN, { remember: false });
+  }
+
   function initTheme() {
     var saved = null;
     try { saved = localStorage.getItem('shiye-theme'); } catch (e) { /* 忽略 */ }
@@ -148,8 +187,7 @@
 
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    var meta = $('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', theme === 'dark' ? '#13161a' : '#fbfaf7');
+    syncThemeColor();
     $$('.theme-toggle').forEach(function (btn) {
       btn.setAttribute('aria-label', theme === 'dark' ? '切换到浅色模式' : '切换到深色模式');
       btn.setAttribute('title', theme === 'dark' ? '切换到浅色模式' : '切换到深色模式');
@@ -323,6 +361,9 @@
 
   function applyAccent(site) {
     var color = (site.accent || '').trim();
+    /* 留空或填 auto 时，沿用当前主题皮肤自带的配色。
+       填了具体色值才覆盖主色，深色与浅色底由该色推导。 */
+    if (!color || color.toLowerCase() === 'auto') return;
     if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color)) return;
     document.documentElement.style.setProperty('--accent', color);
     if (color.length === 7) {
@@ -832,6 +873,67 @@
     renderMeta(site, { title: about.title || '关于本站' });
   }
 
+  /* ---------------- 主题预览页 ---------------- */
+  var SKIN_INFO = [
+    { key: 'ink', label: '铅墨', desc: '默认 · 中文长文阅读' },
+    { key: 'corporate', label: '磐石', desc: '企业级 CMS / 官网' },
+    { key: 'magazine', label: '刊页', desc: '杂志 / 媒体' },
+    { key: 'minimal', label: '白纸', desc: '极简个人博客' },
+    { key: 'warm', label: '暖宣', desc: '纸感随笔' },
+    { key: 'terminal', label: '终端', desc: '技术极客' }
+  ];
+
+  /* 排版样例：用来直观比较各主题的标题字体、行距与栏宽，不是站点内容 */
+  var PROSE_SAMPLE =
+    '<h2>正文排版样例</h2>' +
+    '<p>主题决定的不只是颜色。标题字体、行距、栏宽、卡片间距这些看不见的细节，' +
+    '才是决定一篇文章读起来累不累的关键。下面这段文字就是用来看清这一点的。</p>' +
+    '<p>好的阅读版式会让人忘记版式的存在：视线顺着文字流下去，不必刻意去找下一行。' +
+    '行距过密会挤，过疏会散；栏宽过宽时眼睛回行容易串行，过窄则频繁换行同样打断节奏。</p>' +
+    '<blockquote><p>排版的目标不是好看，而是让内容更容易被读完。</p></blockquote>' +
+    '<h3>列表与代码的呈现</h3>' +
+    '<ul>' +
+      '<li>列表项的间距与符号颜色随主题变化；</li>' +
+      '<li>引用块在不同主题下可能是实线，也可能是虚线；</li>' +
+      '<li>代码块的字号与配色同样各自不同。</li>' +
+    '</ul>' +
+    '<pre><code>node tools/deploy.mjs --user=你的用户名 --repo=blog</code></pre>' +
+    '<p>看完这一页，记住你偏好的那个名字，去后台「站点设置 → 站点主题」里选上即可。</p>';
+
+  function renderThemes(site) {
+    var picker = $('#themes-picker');
+    var proseHost = $('#themes-prose');
+    var current = normalizeSkin(site.theme);
+
+    if (proseHost && !proseHost.firstChild) {
+      var prose = document.createElement('div');
+      prose.className = 'prose';
+      prose.innerHTML = PROSE_SAMPLE;
+      proseHost.appendChild(prose);
+    }
+
+    if (!picker) return;
+
+    picker.innerHTML = SKIN_INFO.map(function (s) {
+      return '<button type="button" data-skin-name="' + s.key + '"' +
+        (s.key === current ? ' class="is-active"' : '') + '>' +
+        '<b>' + esc(s.label) + '</b><span>' + esc(s.desc) + '</span></button>';
+    }).join('') +
+      '<p class="theme-hint">后台当前设定：<b>' + esc(current) + '</b>。' +
+      '点上面的按钮可以即时预览，但不会保存；要正式启用，请在后台「站点设置 → 站点主题」里选择，' +
+      '或把 <code>content/site.json</code> 的 <code>theme</code> 改成对应值。</p>';
+
+    $$('[data-skin-name]', picker).forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        applySkin(btn.getAttribute('data-skin-name'), { remember: false });
+        $$('[data-skin-name]', picker).forEach(function (b) {
+          if (b === btn) b.classList.add('is-active');
+          else b.classList.remove('is-active');
+        });
+      });
+    });
+  }
+
   /* ---------------- 错误提示 ---------------- */
   function showLoadError(err) {
     console.error('[拾页] 内容加载失败：', err);
@@ -852,6 +954,7 @@
   /* ---------------- 启动 ---------------- */
   function boot() {
     initTheme();
+    initSkin();
     bindThemeToggle();
     renderBackToTop();
     setCanonical();
@@ -866,6 +969,8 @@
       state.posts = normalizePosts(res[1]);
       state.about = res[2] || null;
 
+      /* 后台选定的皮肤在这里生效；accent 留空时不再覆盖主题配色 */
+      applySkin(state.site.theme);
       applyAccent(state.site);
       renderHeader(state.site);
       renderFooter(state.site);
@@ -878,11 +983,13 @@
         tags: { title: '标签' },
         search: { title: '搜索' },
         about: { title: '关于本站' },
+        themes: { title: '主题预览' },
         error: { title: '页面不存在' }
       }[page] || {};
       renderMeta(state.site, baseMeta);
 
       if (page === 'home') renderHome(state.site);
+      else if (page === 'themes') { renderHome(state.site); renderThemes(state.site); }
       else if (page === 'post') renderPost(state.site);
       else if (page === 'archive') renderArchive(state.site);
       else if (page === 'tags') renderTags(state.site);
